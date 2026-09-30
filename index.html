@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEART-CHECK - Pemantauan Mandiri Pasien Gagal Jantung Kronis</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#E53E3E',
+                            darkRed: '#9B2C2C',
+                            green: '#38A169',
+                            yellow: '#D69E2E',
+                            bgDark: '#121212',
+                            cardDark: '#1E1E1E',
+                            cardDarkHover: '#2A2A2A'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Weight Progress Graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* High contrast focus ring for elderly accessibility */
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 3px solid #E53E3E !important;
+            outline-offset: 2px;
+        }
+
+        /* Dynamic font sizing accessibility scale */
+        .text-scale-sm { font-size: 0.9rem; }
+        .text-scale-md { font-size: 1rem; }
+        .text-scale-lg { font-size: 1.15rem; }
+        .text-scale-xl { font-size: 1.3rem; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E53E3E;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-brand-bgDark dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Top Accessibility & Navigation Header -->
+    <header class="sticky top-0 z-40 bg-white dark:bg-brand-cardDark border-b border-gray-200 dark:border-gray-800 shadow-sm">
+        <div class="max-w-md md:max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('home')">
+                <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600 dark:text-red-500 font-bold text-xl">
+                    <i class="fa-solid fa-heart-pulse animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg md:text-xl tracking-tight text-red-600 dark:text-red-500 leading-tight">
+                        HEART-CHECK
+                    </h1>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Pemantauan Gagal Jantung</p>
+                </div>
+            </div>
+
+            <!-- Accessibility Controls: Font Size & Theme Toggle -->
+            <div class="flex items-center gap-2">
+                <!-- Text Scale Selector -->
+                <div class="flex items-center bg-gray-200 dark:bg-gray-800 rounded-lg p-1 text-xs">
+                    <button onclick="changeFontScale(-1)" class="px-2 py-1 font-bold rounded hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200" title="Kecilkan Teks">A-</button>
+                    <button onclick="changeFontScale(1)" class="px-2 py-1 font-bold rounded hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200" title="Besarkan Teks">A+</button>
+                </div>
+
+                <!-- Dark / Light Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-yellow-400 hover:opacity-80 transition" title="Ganti Mode">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+
+                <!-- Patient Profile Edit Button -->
+                <button onclick="openProfileModal()" class="p-2 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 font-medium text-xs flex items-center gap-1 border border-red-200 dark:border-red-800">
+                    <i class="fa-solid fa-user"></i>
+                    <span id="header-patient-name" class="hidden sm:inline">Ibu Siti</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container Frame (Optimized for Mobile & Desktop) -->
+    <main class="flex-1 max-w-md md:max-w-3xl w-full mx-auto px-4 py-4 mb-20 text-scale-md" id="app-content-container">
+
+        <!-- TAB 1: BERANDA (HOME) -->
+        <section id="tab-home" class="tab-content space-y-5">
+            <!-- Patient Welcome Card -->
+            <div class="bg-white dark:bg-brand-cardDark p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-10 text-red-600 dark:text-red-500 text-9xl pointer-events-none">
+                    <i class="fa-solid fa-heart-circle-check"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 mb-2">
+                                Pasien Rawat Mandiri
+                            </span>
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white" id="welcome-patient-name">
+                                Halo, Ibu Siti!
+                            </h2>
+                        </div>
+                        <button onclick="openProfileModal()" class="text-xs text-red-600 dark:text-red-400 font-semibold underline">
+                            Ubah Profil
+                        </button>
+                    </div>
+                    <p class="mt-2 text-gray-600 dark:text-gray-300 font-medium">
+                        Bagaimana kondisi kesehatan Anda hari ini?
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Lakukan pemeriksaan mandiri setiap pagi setelah bangun tidur dan buang air kecil.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Primary Action Callout: Mulai Cek Jantung -->
+            <div class="bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-6 text-white shadow-lg hover:shadow-red-900/20 transition transform active:scale-95 cursor-pointer text-center" onclick="switchTab('check')">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-solid fa-stethoscope text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-extrabold tracking-wide mb-1">Mulai Cek Jantung</h3>
+                <p class="text-red-100 text-sm font-medium mb-4">Pemeriksaan mudah ±3 menit</p>
+                <div class="inline-flex items-center gap-2 bg-white text-red-600 font-bold px-6 py-3 rounded-xl shadow">
+                    <span>Mulai Sekarang</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </div>
+
+            <!-- Flow Guide Preview (As outlined in PDF page 4) -->
+            <div class="bg-white dark:bg-brand-cardDark p-4 rounded-2xl border border-gray-200 dark:border-gray-800">
+                <h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-list-ol text-red-500"></i> Alur Pemantauan Harian
+                </h4>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div class="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center font-bold mx-auto mb-1">1</div>
+                        <p class="font-medium text-gray-700 dark:text-gray-300">Jawab 5 Pertanyaan</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div class="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center font-bold mx-auto mb-1">2</div>
+                        <p class="font-medium text-gray-700 dark:text-gray-300">Lihat Hasil Warna</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div class="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center font-bold mx-auto mb-1">3</div>
+                        <p class="font-medium text-gray-700 dark:text-gray-300">Ikuti Saran & Simpan</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Navigation Quick Buttons (PDF page 5 inspiration) -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Riwayat Card -->
+                <div onclick="switchTab('history')" class="bg-white dark:bg-brand-cardDark p-5 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-red-500/50 transition cursor-pointer flex flex-col justify-between group">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <h4 class="font-bold text-gray-900 dark:text-white text-lg">Riwayat</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Hasil & grafik pemeriksaan sebelumnya</p>
+                    </div>
+                    <div class="mt-4 flex items-center text-xs font-bold text-blue-600 dark:text-blue-400">
+                        <span>Lihat Riwayat</span>
+                        <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </div>
+                </div>
+
+                <!-- Edukasi Card -->
+                <div onclick="switchTab('education')" class="bg-white dark:bg-brand-cardDark p-5 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-red-500/50 transition cursor-pointer flex flex-col justify-between group">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-book-medical"></i>
+                        </div>
+                        <h4 class="font-bold text-gray-900 dark:text-white text-lg">Edukasi</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tips & informasi kesehatan jantung</p>
+                    </div>
+                    <div class="mt-4 flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        <span>Pelajari Tips</span>
+                        <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Get Help Card (Inspired by Page 2 RPM-HF Get Help) -->
+            <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 p-4 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-phone-volume"></i>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-red-900 dark:text-red-200 text-sm">Merasa Sangat Sesak / Nyeri Dada?</h5>
+                        <p class="text-xs text-red-700 dark:text-red-300">Segera cari bantuan medis darurat.</p>
+                    </div>
+                </div>
+                <button onclick="callEmergency()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3 py-2 rounded-xl shrink-0 shadow">
+                    Darurat
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 2: CEK JANTUNG (QUESTIONNAIRE FORM) -->
+        <section id="tab-check" class="tab-content hidden space-y-5">
+            <!-- Header section of check form -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Cek Kondisi Hari Ini</h2>
+                    <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">Jawab sesuai kondisi yang Anda rasakan saat ini.</p>
+                </div>
+                <button onclick="speakQuestions()" class="p-2 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 font-medium text-xs flex items-center gap-1" title="Bacakan Pertanyaan">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span class="hidden sm:inline">Bacakan</span>
+                </button>
+            </div>
+
+            <!-- Assessment Form -->
+            <form id="heart-check-form" onsubmit="calculateAndShowResult(event)" class="space-y-4">
+                
+                <!-- Question 1 -->
+                <div class="bg-white dark:bg-brand-cardDark p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                    <label class="block font-bold text-gray-900 dark:text-gray-100 text-base md:text-lg">
+                        1. Apakah Anda mengalami sesak napas?
+                    </label>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q1" value="0" required class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Tidak</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q1" value="1" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Saat beraktivitas ringan/biasa</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q1" value="2" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-red-600 dark:text-red-400 font-semibold">Saat istirahat / duduk diam</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="bg-white dark:bg-brand-cardDark p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                    <label class="block font-bold text-gray-900 dark:text-gray-100 text-base md:text-lg">
+                        2. Apakah kaki Anda membengkak?
+                    </label>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q2" value="0" required class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Tidak</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q2" value="1" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Sedikit membengkak (bekas kaus kaki/sepatu)</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q2" value="2" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Semakin membengkak dibanding kemarin</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="bg-white dark:bg-brand-cardDark p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                    <label class="block font-bold text-gray-900 dark:text-gray-100 text-base md:text-lg">
+                        3. Apakah berat badan Anda meningkat mendadak?
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">(Contoh: naik 1–2 kg dalam 1–3 hari)</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q3" value="0" required class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Tidak</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q3" value="1" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Ya, meningkat mendadak</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q3" value="0" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Tidak tahu / Tidak menimbang</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 4 -->
+                <div class="bg-white dark:bg-brand-cardDark p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                    <label class="block font-bold text-gray-900 dark:text-gray-100 text-base md:text-lg">
+                        4. Apakah Anda lebih sulit tidur telentang karena sesak?
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">(Perlu memakai 2-3 bantal tinggi agar tidak sesak)</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q4" value="0" required class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Tidak</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q4" value="1" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Ya, perlu bantal lebih tinggi</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 5 -->
+                <div class="bg-white dark:bg-brand-cardDark p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                    <label class="block font-bold text-gray-900 dark:text-gray-100 text-base md:text-lg">
+                        5. Apakah Anda mengalami nyeri dada atau pingsan?
+                    </label>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q5" value="0" required class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">Tidak</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="q5" value="2" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                            <span class="ml-3 font-medium text-red-600 dark:text-red-400 font-semibold">Ya (Nyeri dada / Pusing berat / Pingsan)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Additional Inputs: Weight & Blood Pressure (As requested in PDF Page 6) -->
+                <div class="bg-white dark:bg-brand-cardDark p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-4">
+                    <h3 class="font-bold text-gray-900 dark:text-gray-100 text-base md:text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-weight-scale text-red-500"></i> Pengukuran Fisik (Opsional / Jika Ada)
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                Berat Badan Hari Ini (kg)
+                            </label>
+                            <input type="number" step="0.1" id="input-weight" placeholder="Contoh: 62.5" class="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                Tekanan Darah (mmHg)
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="input-sys" placeholder="Sistolik (120)" class="w-1/2 p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold">
+                                <span class="text-gray-400">/</span>
+                                <input type="number" id="input-dia" placeholder="Diastolik (80)" class="w-1/2 p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 active:scale-98 text-white font-extrabold text-lg py-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span>Lihat Hasil Pemeriksaan</span>
+                </button>
+            </form>
+        </section>
+
+        <!-- TAB 3: HASIL PEMERIKSAAN (RESULT DISPLAY) -->
+        <section id="tab-result" class="tab-content hidden space-y-5">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Hasil Pemeriksaan Hari Ini</h2>
+                <span id="result-timestamp" class="text-xs text-gray-500 dark:text-gray-400"></span>
+            </div>
+
+            <!-- Dynamic Result Card (Triage Green / Yellow / Red) -->
+            <div id="result-status-card" class="p-6 rounded-2xl border transition-all duration-300 shadow-md">
+                <!-- Content injected dynamically via JS -->
+            </div>
+
+            <!-- Detailed Summary Breakdown -->
+            <div class="bg-white dark:bg-brand-cardDark p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                <h3 class="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
+                    <i class="fa-solid fa-[#E53E3E] fa-list-check text-red-500"></i> Rincian Jawaban Anda:
+                </h3>
+                <ul id="result-breakdown-list" class="space-y-2 text-sm text-gray-700 dark:text-gray-300 divide-y divide-gray-100 dark:divide-gray-800">
+                    <!-- Dynamic details injected by JS -->
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <button onclick="saveCurrentResultToHistory()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Simpan ke Riwayat Kesehatan</span>
+                </button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="switchTab('check')" class="bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold py-3 rounded-xl transition text-sm">
+                        Ulangi Cek
+                    </button>
+                    <button onclick="switchTab('history')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition text-sm">
+                        Buka Riwayat
+                    </button>
+                </div>
+            </div>
+
+            <!-- Medical Disclaimer (Explicitly required in PDF Page 9) -->
+            <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 p-4 rounded-xl text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                <div class="font-bold flex items-center gap-1">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Catatan Penting
+                </div>
+                <p>
+                    Warna hijau bukan jaminan bahwa pasien bebas dari masalah jantung. Website ini hanya membantu pemantauan mandiri, bukan menegakkan diagnosis medis. Bila gejala memburuk secara drastis, segera cari penanganan medis.
+                </p>
+            </div>
+        </section>
+
+        <!-- TAB 4: RIWAYAT KESEHATAN & GRAFIK -->
+        <section id="tab-history" class="tab-content hidden space-y-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Riwayat Kesehatan</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Perkembangan kondisi Anda dari hari ke hari.</p>
+                </div>
+                <button onclick="clearHistoryConfirm()" class="text-xs text-red-500 hover:text-red-700 font-semibold">
+                    Hapus Data
+                </button>
+            </div>
+
+            <!-- Weight Progress Chart Card -->
+            <div class="bg-white dark:bg-brand-cardDark p-4 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-red-500"></i> Grafik Berat Badan (kg)
+                    </h3>
+                    <span class="text-xs text-gray-400">Pantau penumpukan cairan</span>
+                </div>
+                <div class="relative h-48 w-full">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+
+            <!-- History List Table/Cards -->
+            <div class="space-y-3">
+                <h3 class="font-bold text-gray-900 dark:text-white text-sm">Catatan Pemeriksaan Terakhir</h3>
+                <div id="history-list-container" class="space-y-3">
+                    <!-- History items rendered here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: EDUKASI & GUIDELINES -->
+        <section id="tab-education" class="tab-content hidden space-y-5">
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Edukasi & Tips Kesehatan</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Panduan perawatan mandiri gagal jantung di rumah.</p>
+            </div>
+
+            <!-- Educational Topics -->
+            <div class="space-y-4">
+                <!-- Tip 1: Weight & Fluids -->
+                <div class="bg-white dark:bg-brand-cardDark p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-faucet-drip"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Batasi Asupan Cairan & Garam</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Penting untuk mencegah bengkak</p>
+                        </div>
+                    </div>
+                    <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed pt-2">
+                        Kurangi konsumsi makanan asin atau tinggi natrium. Ikuti batasan minum harian yang disarankan oleh dokter (biasanya 1.5 – 2 Liter/hari termasuk kuah sup dan buah).
+                    </p>
+                </div>
+
+                <!-- Tip 2: Daily Weight check -->
+                <div class="bg-white dark:bg-brand-cardDark p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-weight-scale"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Timbang Berat Badan Setiap Pagi</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Waktu terbaik: Bangun tidur</p>
+                        </div>
+                    </div>
+                    <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed pt-2">
+                        Timbang berat badan setiap pagi setelah buang air kecil dan sebelum sarapan. Jika berat badan Anda naik mendadak (misal 1.5 kg dalam 2 hari), itu tanda penumpukan cairan!
+                    </p>
+                </div>
+
+                <!-- Tip 3: Medications -->
+                <div class="bg-white dark:bg-brand-cardDark p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-pills"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Minum Obat Secara Teratur</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Sesuai resep dokter</p>
+                        </div>
+                    </div>
+                    <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed pt-2">
+                        Jangan menghentikan atau mengubah dosis obat jantung tanpa berkonsultasi dengan dokter Anda, meskipun Anda sudah merasa sehat.
+                    </p>
+                </div>
+
+                <!-- Interactive Fluid Tracker Tool -->
+                <div class="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border border-blue-500/30 p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-blue-900 dark:text-blue-300 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-glass-water"></i> Pengingat Minum Harian
+                    </h3>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">Tandai setiap kali Anda minum gelas air (200 ml):</p>
+                    <div id="glass-tracker" class="flex flex-wrap gap-2 pt-1">
+                        <!-- Rendered by JS -->
+                    </div>
+                    <p id="glass-count-label" class="text-xs font-semibold text-blue-600 dark:text-blue-400">0 dari 8 gelas (0 / 1600 ml)</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Mobile Friendly) -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-brand-cardDark border-t border-gray-200 dark:border-gray-800 shadow-lg">
+        <div class="max-w-md md:max-w-3xl mx-auto flex justify-around py-2">
+            <button onclick="switchTab('home')" id="nav-home" class="nav-btn flex flex-col items-center py-1 px-3 text-red-600 dark:text-red-500 font-medium text-xs">
+                <i class="fa-solid fa-house text-lg mb-1"></i>
+                <span>Beranda</span>
+            </button>
+            <button onclick="switchTab('check')" id="nav-check" class="nav-btn flex flex-col items-center py-1 px-3 text-gray-500 dark:text-gray-400 font-medium text-xs">
+                <i class="fa-solid fa-heart-pulse text-lg mb-1"></i>
+                <span>Cek Jantung</span>
+            </button>
+            <button onclick="switchTab('history')" id="nav-history" class="nav-btn flex flex-col items-center py-1 px-3 text-gray-500 dark:text-gray-400 font-medium text-xs">
+                <i class="fa-solid fa-clock-rotate-left text-lg mb-1"></i>
+                <span>Riwayat</span>
+            </button>
+            <button onclick="switchTab('education')" id="nav-education" class="nav-btn flex flex-col items-center py-1 px-3 text-gray-500 dark:text-gray-400 font-medium text-xs">
+                <i class="fa-solid fa-book-medical text-lg mb-1"></i>
+                <span>Edukasi</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-brand-cardDark max-w-sm w-full rounded-2xl p-6 space-y-4 shadow-xl border border-gray-200 dark:border-gray-800">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg text-gray-900 dark:text-white">Profil Pasien</h3>
+                <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Nama Pasien</label>
+                    <input type="text" id="modal-input-name" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">No. Rekam Medis / Kode Pasien</label>
+                    <input type="text" id="modal-input-code" placeholder="Contoh: RM-9821" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Nomor Darurat (Keluarga / Dokter)</label>
+                    <input type="tel" id="modal-input-phone" placeholder="08123456789" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeProfileModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300">Batal</button>
+                <button onclick="saveProfileModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-red-600 text-white shadow hover:bg-red-700">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow-lg transition opacity-0 pointer-events-none flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">Pesan notifikasi</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Default Patient State
+        let patientProfile = {
+            name: "Ibu Siti",
+            code: "RM-10492",
+            phone: "081122334455"
+        };
+
+        // Accessibility Scale State
+        let currentFontScale = 0; // -1, 0, 1, 2
+        const fontClasses = ['text-scale-sm', 'text-scale-md', 'text-scale-lg', 'text-scale-xl'];
+
+        // Dynamic State Storage
+        let currentAssessmentResult = null;
+        let historyData = [];
+        let glassTrackerCount = 0;
+        let chartInstance = null;
+
+        // Initialize App on Window Load
+        window.onload = function() {
+            loadPatientProfile();
+            loadHistoryFromStorage();
+            initChart();
+            renderFluidTracker();
+            switchTab('home');
+        };
+
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-sun';
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-moon';
+            }
+        }
+
+        // Accessibility Font Size Adjuster
+        function changeFontScale(delta) {
+            const container = document.getElementById('app-content-container');
+            container.classList.remove(fontClasses[currentFontScale + 1]);
+            currentFontScale = Math.max(-1, Math.min(2, currentFontScale + delta));
+            container.classList.add(fontClasses[currentFontScale + 1]);
+            showToast("Ukuran teks disesuaikan");
+        }
+
+        // Navigation Switcher
+        function switchTab(tabId) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.add('hidden'));
+
+            const target = document.getElementById('tab-' + tabId);
+            if (target) target.classList.remove('hidden');
+
+            // Update Nav Colors
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => {
+                btn.classList.remove('text-red-600', 'dark:text-red-500');
+                btn.classList.add('text-gray-500', 'dark:text-gray-400');
+            });
+
+            const activeBtn = document.getElementById('nav-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.add('text-red-600', 'dark:text-red-500');
+                activeBtn.classList.remove('text-gray-500', 'dark:text-gray-400');
+            }
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (tabId === 'history') {
+                renderHistoryList();
+                updateChartData();
+            }
+        }
+
+        // Calculate Triage Category (Hijau, Kuning, Merah)
+        function calculateAndShowResult(e) {
+            e.preventDefault();
+            
+            const form = document.getElementById('heart-check-form');
+            const q1 = parseInt(form.querySelector('input[name="q1"]:checked')?.value || 0);
+            const q2 = parseInt(form.querySelector('input[name="q2"]:checked')?.value || 0);
+            const q3 = parseInt(form.querySelector('input[name="q3"]:checked')?.value || 0);
+            const q4 = parseInt(form.querySelector('input[name="q4"]:checked')?.value || 0);
+            const q5 = parseInt(form.querySelector('input[name="q5"]:checked')?.value || 0);
+
+            const weight = parseFloat(document.getElementById('input-weight').value) || null;
+            const sys = parseInt(document.getElementById('input-sys').value) || null;
+            const dia = parseInt(document.getElementById('input-dia').value) || null;
+
+            // Diagnostic Logic:
+            // RED: Nyeri dada/pingsan (q5==2) OR Sesak saat istirahat (q1==2) OR Kritikal BP
+            // YELLOW: Sesak saat aktivitas (q1==1) OR Kaki bengkak (q2>=1) OR Berat naik (q3==1) OR Sesak tidur (q4==1)
+            // GREEN: All 0s
+            let status = 'GREEN';
+            
+            if (q5 === 2 || q1 === 2 || (sys && sys > 180) || (sys && sys < 80)) {
+                status = 'RED';
+            } else if (q1 === 1 || q2 > 0 || q3 === 1 || q4 === 1) {
+                status = 'YELLOW';
+            }
+
+            const now = new Date();
+            const timeString = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + 
+                               ' - ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            currentAssessmentResult = {
+                id: Date.now(),
+                date: now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+                fullDate: timeString,
+                status: status,
+                weight: weight,
+                bp: (sys && dia) ? `${sys}/${dia}` : 'Tidak diisi',
+                q1Text: getAnswerText('q1', q1),
+                q2Text: getAnswerText('q2', q2),
+                q3Text: getAnswerText('q3', q3),
+                q4Text: getAnswerText('q4', q4),
+                q5Text: getAnswerText('q5', q5),
+            };
+
+            renderResultView(currentAssessmentResult);
+            switchTab('result');
+        }
+
+        function getAnswerText(q, val) {
+            const map = {
+                q1: ['Tidak sesak', 'Sesak saat aktivitas', 'Sesak saat istirahat'],
+                q2: ['Tidak bengkak', 'Sedikit bengkak', 'Semakin membengkak'],
+                q3: ['Berat stabil', 'Meningkat mendadak', 'Tidak tahu'],
+                q4: ['Bisa tidur telentang', 'Sulit tidur telentang'],
+                q5: ['Tidak ada nyeri dada', 'Nyeri dada / Pingsan']
+            };
+            return map[q][val] || 'Tidak diisi';
+        }
+
+        // Render Triage Display (PDF Pages 8-9 inspired UI)
+        function renderResultView(res) {
+            document.getElementById('result-timestamp').innerText = res.fullDate;
+            const card = document.getElementById('result-status-card');
+
+            if (res.status === 'GREEN') {
+                card.className = "p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-100 shadow-md space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-2xl shrink-0 mt-0.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 mb-1">KONDISI STABIL</span>
+                            <h3 class="text-xl md:text-2xl font-black text-emerald-800 dark:text-emerald-300">HIJAU — Tidak Ada Tanda Perburukan</h3>
+                        </div>
+                    </div>
+                    <p class="text-sm md:text-base leading-relaxed font-medium">
+                        Lanjutkan pemantauan harian, konsumsi obat sesuai resep, dan ikuti rencana perawatan dari tenaga kesehatan.
+                    </p>
+                `;
+            } else if (res.status === 'YELLOW') {
+                card.className = "p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-500 text-amber-950 dark:text-amber-100 shadow-md space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center text-2xl shrink-0 mt-0.5">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 mb-1">PERLU PERHATIAN</span>
+                            <h3 class="text-xl md:text-2xl font-black text-amber-800 dark:text-amber-300">KUNING — Perlu Menghubungi Tenaga Kesehatan</h3>
+                        </div>
+                    </div>
+                    <p class="text-sm md:text-base leading-relaxed font-medium">
+                        Terdapat perubahan gejala, seperti edema (bengkak) yang bertambah atau kenaikan berat badan mendadak. Hubungi tenaga kesehatan pada hari yang sama untuk mendapatkan arahan.
+                    </p>
+                    <div class="pt-2">
+                        <a href="tel:${patientProfile.phone}" class="inline-flex items-center gap-2 bg-amber-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow">
+                            <i class="fa-solid fa-phone"></i>
+                            <span>Hubungi Tenaga Kesehatan (${patientProfile.phone})</span>
+                        </a>
+                    </div>
+                `;
+            } else if (res.status === 'RED') {
+                card.className = "p-6 rounded-2xl bg-red-50 dark:bg-red-950/50 border-2 border-red-600 text-red-950 dark:text-red-100 shadow-xl space-y-3 animate-pulse";
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center text-2xl shrink-0 mt-0.5">
+                            <i class="fa-solid fa-lightbulb-exclamation"></i>
+                        </div>
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-200 dark:bg-red-900 text-red-900 dark:text-red-200 mb-1">DARURAT</span>
+                            <h3 class="text-xl md:text-2xl font-black text-red-700 dark:text-red-300">MERAH — Segera Cari Pertolongan Medis</h3>
+                        </div>
+                    </div>
+                    <p class="text-sm md:text-base leading-relaxed font-bold text-red-800 dark:text-red-200">
+                        Jika mengalami sesak berat saat istirahat, nyeri dada, atau pingsan, segera cari pertolongan darurat. Jangan menunggu pemeriksaan berikutnya!
+                    </p>
+                    <div class="pt-2">
+                        <button onclick="callEmergency()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 text-sm">
+                            <i class="fa-solid fa-truck-medical"></i>
+                            <span>PANGGIL BANTUAN DARURAT SEKARANG</span>
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Render breakdown
+            const list = document.getElementById('result-breakdown-list');
+            list.innerHTML = `
+                <li class="py-1.5 flex justify-between"><span>1. Sesak Napas:</span> <strong>${res.q1Text}</strong></li>
+                <li class="py-1.5 flex justify-between"><span>2. Kaki Bengkak:</span> <strong>${res.q2Text}</strong></li>
+                <li class="py-1.5 flex justify-between"><span>3. Kenaikan Berat Badan:</span> <strong>${res.q3Text}</strong></li>
+                <li class="py-1.5 flex justify-between"><span>4. Posisi Tidur Telentang:</span> <strong>${res.q4Text}</strong></li>
+                <li class="py-1.5 flex justify-between"><span>5. Nyeri Dada / Pingsan:</span> <strong>${res.q5Text}</strong></li>
+                <li class="py-1.5 flex justify-between text-red-600 dark:text-red-400"><span>Berat Badan:</span> <strong>${res.weight ? res.weight + ' kg' : 'Tidak diisi'}</strong></li>
+                <li class="py-1.5 flex justify-between text-red-600 dark:text-red-400"><span>Tekanan Darah:</span> <strong>${res.bp}</strong></li>
+            `;
+        }
+
+        // Save Current Assessment
+        function saveCurrentResultToHistory() {
+            if (!currentAssessmentResult) return;
+            historyData.unshift(currentAssessmentResult);
+            saveHistoryToStorage();
+            showToast("Hasil pemeriksaan berhasil disimpan!");
+            switchTab('history');
+        }
+
+        // Render History Items
+        function renderHistoryList() {
+            const container = document.getElementById('history-list-container');
+            if (historyData.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fa-solid fa-folder-open text-4xl mb-2"></i>
+                        <p class="text-sm">Belum ada riwayat pemeriksaan.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = historyData.map(item => {
+                let badgeClass = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200";
+                let badgeText = "HIJAU";
+                if (item.status === 'YELLOW') {
+                    badgeClass = "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
+                    badgeText = "KUNING";
+                } else if (item.status === 'RED') {
+                    badgeClass = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+                    badgeText = "MERAH";
+                }
+
+                return `
+                    <div class="bg-white dark:bg-brand-cardDark p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-2 py-0.5 rounded text-xs font-bold ${badgeClass}">${badgeText}</span>
+                                <span class="text-xs text-gray-500 font-medium">${item.fullDate || item.date}</span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-300">
+                                Berat: <strong>${item.weight ? item.weight + ' kg' : '-'}</strong> | TD: <strong>${item.bp}</strong>
+                            </p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize Weight Progress Chart
+        function initChart() {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['4 hari lalu', '3 hari lalu', 'Kemarin', 'Hari Ini'],
+                    datasets: [{
+                        label: 'Berat Badan (kg)',
+                        data: [61.0, 61.2, 61.5, 62.1],
+                        borderColor: '#E53E3E',
+                        backgroundColor: 'rgba(229, 62, 62, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#E53E3E'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartData() {
+            if (!chartInstance) return;
+            const weights = historyData.filter(d => d.weight).slice(0, 7).reverse();
+            if (weights.length > 0) {
+                chartInstance.data.labels = weights.map(w => w.date);
+                chartInstance.data.datasets[0].data = weights.map(w => w.weight);
+                chartInstance.update();
+            }
+        }
+
+        // Fluid Glasses Tracker
+        function renderFluidTracker() {
+            const container = document.getElementById('glass-tracker');
+            container.innerHTML = '';
+            for (let i = 1; i <= 8; i++) {
+                const filled = i <= glassTrackerCount;
+                container.innerHTML += `
+                    <button onclick="toggleGlass(${i})" class="w-9 h-11 rounded-lg border-2 flex items-center justify-center transition ${filled ? 'bg-blue-500 border-blue-600 text-white' : 'border-blue-300 dark:border-blue-800 text-blue-300'}">
+                        <i class="fa-solid fa-glass-water text-lg"></i>
+                    </button>
+                `;
+            }
+            document.getElementById('glass-count-label').innerText = `${glassTrackerCount} dari 8 gelas (${glassTrackerCount * 200} / 1600 ml)`;
+        }
+
+        function toggleGlass(index) {
+            glassTrackerCount = (glassTrackerCount === index) ? index - 1 : index;
+            renderFluidTracker();
+        }
+
+        // Text-to-speech for Elderly Accessibility
+        function speakQuestions() {
+            if ('speechSynthesis' in window) {
+                const text = "Cek Kondisi Hari Ini. Pertanyaan pertama: Apakah Anda mengalami sesak napas? Kedua: Apakah kaki Anda membengkak? Ketiga: Apakah berat badan Anda meningkat mendadak? Keempat: Apakah Anda lebih sulit tidur telentang? Kelima: Apakah Anda mengalami nyeri dada atau pingsan?";
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                window.speechSynthesis.speak(utterance);
+                showToast("Membacakan pertanyaan...");
+            } else {
+                showToast("Fitur suara tidak didukung browser ini.");
+            }
+        }
+
+        // Profile Modal
+        function openProfileModal() {
+            document.getElementById('modal-input-name').value = patientProfile.name;
+            document.getElementById('modal-input-code').value = patientProfile.code;
+            document.getElementById('modal-input-phone').value = patientProfile.phone;
+            document.getElementById('profile-modal').classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        function saveProfileModal() {
+            patientProfile.name = document.getElementById('modal-input-name').value || "Pasien";
+            patientProfile.code = document.getElementById('modal-input-code').value || "";
+            patientProfile.phone = document.getElementById('modal-input-phone').value || "";
+            
+            localStorage.setItem('heartcheck_patient', JSON.stringify(patientProfile));
+            updateProfileUI();
+            closeProfileModal();
+            showToast("Profil pasien berhasil diperbarui!");
+        }
+
+        function updateProfileUI() {
+            document.getElementById('header-patient-name').innerText = patientProfile.name;
+            document.getElementById('welcome-patient-name').innerText = `Halo, ${patientProfile.name}!`;
+        }
+
+        function loadPatientProfile() {
+            const saved = localStorage.getItem('heartcheck_patient');
+            if (saved) {
+                patientProfile = JSON.parse(saved);
+            }
+            updateProfileUI();
+        }
+
+        // Local Storage Handlers
+        function saveHistoryToStorage() {
+            localStorage.setItem('heartcheck_history', JSON.stringify(historyData));
+        }
+
+        function loadHistoryFromStorage() {
+            const saved = localStorage.getItem('heartcheck_history');
+            if (saved) {
+                historyData = JSON.parse(saved);
+            } else {
+                // Mock historical data for first time presentation
+                historyData = [
+                    { id: 1, date: '28 Sep', fullDate: 'Senin, 28 September 2026', status: 'GREEN', weight: 61.0, bp: '120/80', q1Text: 'Tidak sesak', q2Text: 'Tidak bengkak', q3Text: 'Berat stabil', q4Text: 'Bisa tidur telentang', q5Text: 'Tidak ada nyeri dada' },
+                    { id: 2, date: '29 Sep', fullDate: 'Selasa, 29 September 2026', status: 'GREEN', weight: 61.2, bp: '122/82', q1Text: 'Tidak sesak', q2Text: 'Tidak bengkak', q3Text: 'Berat stabil', q4Text: 'Bisa tidur telentang', q5Text: 'Tidak ada nyeri dada' },
+                    { id: 3, date: '30 Sep', fullDate: 'Rabu, 30 September 2026', status: 'YELLOW', weight: 62.1, bp: '130/85', q1Text: 'Sesak saat aktivitas', q2Text: 'Sedikit bengkak', q3Text: 'Meningkat mendadak', q4Text: 'Bisa tidur telentang', q5Text: 'Tidak ada nyeri dada' }
+                ];
+                saveHistoryToStorage();
+            }
+        }
+
+        function clearHistoryConfirm() {
+            if (confirm("Apakah Anda yakin ingin menghapus semua riwayat pemeriksaan?")) {
+                historyData = [];
+                saveHistoryToStorage();
+                renderHistoryList();
+                updateChartData();
+                showToast("Riwayat telah dibersihkan.");
+            }
+        }
+
+        function callEmergency() {
+            window.location.href = `tel:${patientProfile.phone || '119'}`;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
